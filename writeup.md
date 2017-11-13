@@ -18,6 +18,7 @@ For the decoders to be able to better reconstruct the output image from the 1x1 
 The number of encoders and decoders is 3. The kernel size for the convolution layers is 3. The size of the 1x1 layer I went with was 256. It was enough to get a score above 0.40, but most likely the network can be improved by deepening it. However, given the fact that the input image is quite small (160x160), I don't think a whole lot more can be done since it becomes hard even for a human to tell people apart in an image that size.
 
 ![architecture][arch]
+
 ---
 
 ##### The write-up conveys the student's understanding of the parameters chosen for the the neural network.
@@ -27,7 +28,21 @@ All configurable parameters should be explicitly stated and justified.
 
 ---
 
-First, the values for the parameters:
+The parameters for the neural network were the following:
+
+The *learning rate* provides a way to tune how fast the neural net adjusts to fit new samples that are used for training. The smaller the learning rate, the more times it has to be shown the training samples in order to be able to improve to fit them correctly.
+
+The *number of epochs* is the number of times the network is shown the full set of training samples. The bigger the number of epochs, the smaller the error should get. However, training a network for a large number of epochs could make it overfit the training set, leading to a worse performance normally on other samples.
+
+The training samples are split into batches. Then, for each one of the batches, the training samples are passed throught the network and the weights are adjusted. The *batch size* represents the number of samples that are in a batch. The larger the number of samples in a batch, the more precise the loss estimation can be. However, having a lot of samples in a batch makes training slower.
+
+*Steps per epoch* represents the number of batches in the training set.
+
+*Validation steps* represents the number of batches in the validation set.
+
+By changing the number of *workers*, you could use more cores in the training, probably because the computation runs on the GPUs, this one does not influence how fast the network trains.
+
+The values for the parameters:
 
 ```
 learning_rate = 0.0016
@@ -53,7 +68,9 @@ The student demonstrates a clear understanding of a fully connected layer and wh
 
 ---
 
-1x1 convolutions are used for dimensionality reduction, since they summarize pixel data from multiple features to a smaller number of new features. They are used in the encoding part of the FCN.
+1x1 convolutions are used for dimensionality reduction, since they summarize pixel data from multiple features to a smaller number of new features. They are used in the encoding part of the FCN. The number of filters is the new number of features that the 1x1 layers summarizes for one pixel of the image.
+
+If I understood it correctly, there is no spatial information captured by this layer (since it's only using data from the pixel located at the exacty same location in the previous layer), but helps the model captured by the network by adding more non-linearity.
 
 In fully connected layers, all outputs are connected to all the activations in the previous layer, so they can be used in a FCN to reconstruct more data from encoded data.
 
@@ -65,9 +82,13 @@ The student is able to identify the use of various reasons for encoding / decodi
 
 ---
 
-While I don't think I understand this question very well, by looking at the images returned by the network, it seems to be identifying parts of the human body that are colored red (like the model it's supposed to be detecting), and then trying to make up the whole body out of them.
+There are two parts to the neural network I used in the project: an encoding part and a decoding part that trained together, end-to-end.
 
-Once in a while, you get a different person wearing a piece of clothing that looks red, and that part of the person is identified as being part of the target, obviously the other parts are not. This wrong identification makes me think that the network could be improved by either adding another encoding layer or something like max pooling so even if one part of the body is red, it's ignored if the most of the other parts are not.
+At each one of the three layers of the encoding part, the actual height and width of the output become smaller, so we can talk about a reduction in the size of the image on these two dimensions. However, the network makes up for this loss in height and width by creating a deeper model of the image (can be seen of the diagram). After the last encoding layer, the image is transformed to a 20 x 20 x 256.
+
+In the decoding layers, bilinear interpolation is used to upscale the image coming from the previous layer to an image of the same size (height and width) as the output of that layer. That image is also concatenated to the image of the same size coming from the corresponding encoding layer.
+
+Being trained end-to-end, the network improves both the encoding half (how well it can summarize what's going on in the original training sample), as well as the decoding half (how well it can re-construct images from abstract smaller ones).
 
 ---
 
@@ -78,3 +99,11 @@ The student is able to clearly articulate whether this model and data would work
 ---
 
 This model is obviously trained for detecting the person wearing red, but with different training data, the same architecture most likely can be trained to detect other types of objects.
+
+---
+
+##### Future improvements
+
+Because I ran the training until I got the first passing score (ran out of AWS credit), I think the network could be improved by tuning the parameters some more.
+
+Once in a while, you get a different person wearing a piece of clothing that looks red, and that part of the person is identified as being part of the target, obviously the other parts are not. This wrong identification makes me think that the network could be improved by either adding another encoding layer or something like max pooling so even if one part of the body is red, it's ignored if the most of the other parts are not.
