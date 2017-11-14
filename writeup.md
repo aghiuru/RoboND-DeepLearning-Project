@@ -68,11 +68,15 @@ The student demonstrates a clear understanding of a fully connected layer and wh
 
 ---
 
-1x1 convolutions are used for dimensionality reduction, since they summarize pixel data from multiple features to a smaller number of new features. They are used in the encoding part of the FCN. The number of filters is the new number of features that the 1x1 layers summarizes for one pixel of the image.
+1x1 convolutions could be used for dimensionality reduction, since they summarize pixel data from multiple channels to a smaller number of new channels. A 1x1 convolution is used in the last encoding part of the FCN. The number of filters is the new number of channels that the 1x1 layers summarizes for one pixel of the image.
 
-If I understood it correctly, there is no spatial information captured by this layer (since it's only using data from the pixel located at the exacty same location in the previous layer), but helps the model captured by the network by adding more non-linearity.
+Because the data comes from the channels of the sample pixel, and because the convolution is followed by a batch normalization with a ReLUs, the 1x1 convolution also becomes a non-linear transformer of the channels in the previous layer.
 
-In fully connected layers, all outputs are connected to all the activations in the previous layer, so they can be used in a FCN to reconstruct more data from encoded data.
+However, this reduction in dimension takes place at the channel/filter level, not at the spatial level (width or height).
+
+In this particular architecture, a 1x1 convolution is used in the middle layer to add non-linearity to the model.
+
+In fully connected layers, all outputs are connected to all the activations in the previous layer. These layers are especially good at classification, since for a pixel that's classified, channels of the pixels that are near it are also considered when training.
 
 ---
 
@@ -88,7 +92,9 @@ At each one of the three layers of the encoding part, the actual height and widt
 
 In the decoding layers, bilinear interpolation is used to upscale the image coming from the previous layer to an image of the same size (height and width) as the output of that layer. That image is also concatenated to the image of the same size coming from the corresponding encoding layer.
 
-Being trained end-to-end, the network improves both the encoding half (how well it can summarize what's going on in the original training sample), as well as the decoding half (how well it can re-construct images from abstract smaller ones).
+Being trained end-to-end, the network improves both the encoding half (how well it can summarize what's going on in the original training sample), as well as the decoding half (how well it can reconstruct the position of the detected objects from the data encoded in the middle layer).
+
+In the context of image manipulation (if you view the neural network as a photo filter), the network takes as input a photo taken by the drone camera and produces a photo of the same size, in which each pixel is colored depending what class is the object that the neural network thinks that pixel is part of. Hence, the detected objects lose their detailed features, being replaced by blobs of color, each class having its own color.
 
 ---
 
@@ -104,6 +110,9 @@ This model is obviously trained for detecting the person wearing red, but with d
 
 ##### Future improvements
 
-Because I ran the training until I got the first passing score (ran out of AWS credit), I think the network could be improved by tuning the parameters some more.
+Camera resolution could be improved in order to provide a more detailed view of what's in front of the drone.
+More samples could be recorded for both training and validation sets in order to improve the accuracy of the model.
+More layers could be added for an even deeper encoding of the given samples.
 
-Once in a while, you get a different person wearing a piece of clothing that looks red, and that part of the person is identified as being part of the target, obviously the other parts are not. This wrong identification makes me think that the network could be improved by either adding another encoding layer or something like max pooling so even if one part of the body is red, it's ignored if the most of the other parts are not.
+Of course, none of these will work without also re-training the neural network.
+Running the training for more epochs would also improve the accuracy of the model.
